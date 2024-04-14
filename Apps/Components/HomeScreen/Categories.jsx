@@ -1,5 +1,5 @@
 import { View, Text, FlatList, Image } from 'react-native'
-import React from 'react'
+import React from 'react' 
 
 export default function Categories({categoryList}) { 
 
