@@ -11,9 +11,9 @@ export default function Slider({sliderList}) {
             horizontal={true} 
             renderItem={({item,index})=>(
                 <View> 
-                    <Text>{index}</Text>
+                    
                     <Image source={{uri:item?.image}}   
-                    className="h-[200px] w-[300px] mr-3 rounded-full object-contain"
+                    className="h-[200px] w-[350px] mr-3 rounded-lg object-contain"
                     /> 
                     </View>
             )}
