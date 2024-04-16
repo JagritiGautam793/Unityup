@@ -13,7 +13,7 @@ export default function Slider({sliderList}) {
                 <View> 
                     
                     <Image source={{uri:item?.image}}   
-                    className="h-[200px] w-[350px] mr-3 rounded-lg object-contain"
+                    className="h-[150px] w-[280px] mr-3 rounded-lg object-contain"
                     /> 
                     </View>
             )}

@@ -1,19 +1,23 @@
-import { View, Text } from 'react-native'
+import { View, Text, ScrollView } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Header from '../Components/HomeScreen/Header'
 import Slider from '../Components/HomeScreen/Slider'
-import { collection, getDocs, getFirestore } from 'firebase/firestore'
+import { collection, doc, getDocs, getFirestore, orderBy } from 'firebase/firestore'
 import { app } from '../../firebaseConfig'
 import Categories from '../Components/HomeScreen/Categories'
+import LatestItemList from '../Components/HomeScreen/LatestItemList'
 
 export default function HomeScreen() {  
   const db=getFirestore(app);    
   // default value as an empty
   const[sliderList,setSliderList] =useState([]); 
-  const[categoryList,setCategoryList]=useState([]);
+  const[categoryList,setCategoryList]=useState([]); 
+  const[latestItemList,setlatestItemList]=useState([]);
+
   useEffect(()=>{
     getSliders(); 
     getCategoryList();
+    getLatestItemList();
   },[])
 // [] means here it will runonly once there is no dependency that can trigger the functioning of this //
 
@@ -40,16 +44,27 @@ export default function HomeScreen() {
     })
   }
 
+  // in order to fetch latest item list 
+
+  const getLatestItemList=async()=>{  
+    setlatestItemList([]);
+    const querySnapshot=await getDocs(collection(db,'UserPost'),orderBy('createdAt','desc'));
+    querySnapshot.forEach((doc)=>{
+      console.log("Docs",doc.data()) 
+      setlatestItemList(latestItemList=>[...latestItemList,doc.data()]);
+    })
+  }
+
 
 
 
 
   return (
-    <View className="py-8 px-6  flex-1"> 
+    <ScrollView className="py-8 px-6  flex-1"> 
     <Header/> 
     <Slider sliderList={sliderList}/> 
     <Categories categoryList={categoryList}/>
-     
-    </View>
+    <LatestItemList latestItemList={latestItemList}/>
+    </ScrollView>
   )
 }

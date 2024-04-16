@@ -1,7 +1,11 @@
 import { View, Text, FlatList, Image } from 'react-native'
 import React from 'react' 
+import { useNavigation } from '@react-navigation/native'
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
-export default function Categories({categoryList}) { 
+export default function Categories({categoryList}) {  
+
+  const navigation=useNavigation();
 
   return (
     <View className="mt-3">
@@ -10,7 +14,14 @@ export default function Categories({categoryList}) {
       data={categoryList} 
       numColumns={3} 
       renderItem={({item,index})=>( 
-        <View className="flex-1 items-center justify-center p-2 border-[1px] border-gray-300 m-1 h-[80px] rounded-lg"> 
+        <TouchableOpacity 
+        onPress={()=>navigation.navigate('item-list', {
+// in order to know category we have seleccted
+        category:item.name
+
+      
+        })}
+        className="flex-1 items-center justify-center p-1 border-[1px] border-gray-400 m-1 h-[60px] rounded-lg bg-gray-100"> 
             <Image source={{uri:item?.icon}} 
             className="w-[35px] h-[35px] p-2 border-[1px]"
             />  
@@ -18,7 +29,7 @@ export default function Categories({categoryList}) {
             
 
 
-        </View>
+        </TouchableOpacity>
 
       )}
       />

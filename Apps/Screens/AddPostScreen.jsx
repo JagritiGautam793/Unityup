@@ -1,4 +1,4 @@
-import { StyleSheet,View, Text, TextInput, Button ,DatePicker, TouchableOpacity, Image, ToastAndroid, Alert, ActivityIndicator} from 'react-native'
+import { StyleSheet,View, Text, TextInput, Button ,DatePicker, TouchableOpacity, Image, ToastAndroid, Alert, ActivityIndicator, KeyboardAvoidingView, ScrollView} from 'react-native'
 import React, { useEffect, useState } from 'react'
 // my document
 
@@ -101,17 +101,18 @@ export default function AddPostScreen() {
 
   }
 
-  return (
-    <View className="p-5"> 
+  return ( 
+    <KeyboardAvoidingView>
+    <ScrollView className="p-5"> 
     <View className="flex flex-row gap-20 align-top">
-      <Text className="text-[20px] font-bold textAlign-center">Report Issue</Text>
+      <Text className="text-[20px] font-bold textAlign-center">Add New Post</Text>
       {/* <Ionicons className="flex flex-row  " name="add-circle-outline" size={45} color="black" /> */}
 
       </View>
-      <Text className="text-[15px] text-gray-500  mb-3">"Be the part of change"</Text> 
+      <Text className="text-[15px] text-gray-500  mb-3">"Create new post and start selling"</Text> 
       
       <Formik
-      initialValues={{title:'',desc:'',price:'',category:'',address:'',image:'',userName:'',userEmail:'',userImage:''}} 
+      initialValues={{title:'',desc:'',price:'',category:'',address:'',image:'',userName:'',userEmail:'',userImage:'',createdAt:Date.now()}} 
       onSubmit={value=>onSubmitMethod(value)}
       validate={(values)=>{
         const errors={}
@@ -170,9 +171,9 @@ export default function AddPostScreen() {
           <TextInput
           style={styles.input}
           placeholder='price'
-          value={values?.datetime}  
+          value={values?.price}  
           keyboardType='default'
-          onChangeText={handleChange('datetime')}
+          onChangeText={handleChange('price')}
           />
 
           <TextInput
@@ -223,7 +224,8 @@ export default function AddPostScreen() {
         )}
 
       </Formik>
-    </View>
+    </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
