@@ -3,10 +3,10 @@ import React from 'react'
 import PostItem from './PostItem' 
 // so that we can reuse this section
 
-export default function LatestItemList({latestItemList}) {
+export default function LatestItemList({latestItemList,heading}) {
   return (
     <View className="mt-3">
-      <Text className="font-bold text-[20px]">Latest Items</Text> 
+      <Text className="font-bold text-[20px]">{heading}</Text> 
       <FlatList
       data={latestItemList} 
       numColumns={2}  
