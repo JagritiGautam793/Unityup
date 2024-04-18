@@ -28,7 +28,7 @@ export default function ItemList() {
     <View className="p-2"> 
      {itemList?.length>0?<LatestItemList latestItemList={itemList}
       heading={'Latest Post'}/>
-      :<Text>No post found</Text>}
+      :<Text className="p-5 text-[20px] justify-center text-gray-400 text-center mt-24">No post found</Text>}
     </View>
   )
 }
