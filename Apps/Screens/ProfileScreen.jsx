@@ -11,19 +11,22 @@ export default function ProfileScreen() {
 
   // in order to fetch user information
 
-  const {user}=useUser();  
+  const {user}=useUser();   
+  const navigation=useNavigation();
 
   const menuList=[
     {
       id:1, 
       name:'My Products',
-      icon:diary
+      icon:diary,
+      path:'my-product'
 
     } ,
     {
       id:2, 
       name:'Explore',
-      icon:search
+      icon:search,
+      path:'explore'
 
     } ,
     // {
@@ -38,7 +41,15 @@ export default function ProfileScreen() {
       icon:logout
 
     } 
-  ]
+  ] 
+
+
+  const onMenuPress=(item)=>{  
+    // ?ternary operator for seperating the condition with its two possible outcomes
+   item?.path ?navigation.navigate(item.path):null;
+
+
+  }
 
 
 
@@ -58,7 +69,9 @@ export default function ProfileScreen() {
     numColumns={3} 
     style={{marginTop:20}}
     renderItem={({item,index})=>(
-      <TouchableOpacity className="flex-1 p-3 border-[1px] items-center m-4 rounded-lg border-gray-400 mt-4 mx-1">
+      <TouchableOpacity 
+      onPress={()=>onMenuPress(item)} 
+      className="flex-1 p-3 border-[1px] items-center m-4 rounded-lg border-gray-400 mt-4 mx-1">
         {item.icon&& <Image source={item?.icon}
         className="w-[40px] h-[40px]"/>} 
         <Text className="text-[12px] mt-2 font-bold">{item.name}</Text>
