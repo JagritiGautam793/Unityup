@@ -1,6 +1,6 @@
 import { View, Text, Image, FlatList, TouchableOpacity } from 'react-native';
 import React from 'react'
-import { useUser } from '@clerk/clerk-expo'; 
+import { useAuth, useUser } from '@clerk/clerk-expo'; 
 import diary from './../../assets/images/diary.png' 
 import search from './../../assets/images/search.png'
 import logout from './../../assets/images/turn-off.png'
@@ -10,6 +10,8 @@ import {useNavigation} from '@react-navigation/native'
 export default function ProfileScreen() { 
 
   // in order to fetch user information
+
+  const {isLoaded,signOut}=useAuth();
 
   const {user}=useUser();   
   const navigation=useNavigation();
@@ -38,13 +40,17 @@ export default function ProfileScreen() {
     {
       id:3, 
       name:'Logout',
-      icon:logout
+      icon:logout,
 
     } 
   ] 
 
 
-  const onMenuPress=(item)=>{  
+  const onMenuPress=(item)=>{   
+    if (item.name=='Logout'){ 
+      signOut();
+      return ;
+    }
     // ?ternary operator for seperating the condition with its two possible outcomes
    item?.path ?navigation.navigate(item.path):null;
 
