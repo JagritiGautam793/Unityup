@@ -24,7 +24,7 @@ export default function HomeScreen() {
   /*In order to get sliders for homescreen*/
   const getSliders=async()=>{ 
     setSliderList([])
-    const querySnapshot = await getDocs(collection(db, "Sliders"));
+    const querySnapshot = await getDocs(collection(db, "SliderComm"));
     querySnapshot.forEach((doc) => { 
       console.log(doc.id,"=>",doc.data());
       // doc.data() is never undefined for query doc snapshots
@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
     setCategoryList([]);
     
-    const querySnapshot=await getDocs(collection(db,'Types'))
+    const querySnapshot=await getDocs(collection(db,'Community'))
 
     querySnapshot.forEach((doc)=>{
       console.log("Docs:",doc.data());
@@ -48,7 +48,7 @@ export default function HomeScreen() {
 
   const getLatestItemList=async()=>{  
     setlatestItemList([]);
-    const querySnapshot=await getDocs(collection(db,'UserPost'),orderBy('createdAt','desc'));
+    const querySnapshot=await getDocs(collection(db,'UserIssue'),orderBy('createdAt','desc'));
     querySnapshot.forEach((doc)=>{
       console.log("Docs",doc.data()) 
       setlatestItemList(latestItemList=>[...latestItemList,doc.data()]);
@@ -65,7 +65,7 @@ export default function HomeScreen() {
     <Slider sliderList={sliderList}/> 
     <Categories categoryList={categoryList}/>
     <LatestItemList latestItemList={latestItemList}
-    heading={'Latest Items'}/>
+    heading={'Latest Issues'}/>
     </ScrollView>
   )
 }

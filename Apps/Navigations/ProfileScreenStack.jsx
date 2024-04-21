@@ -16,14 +16,15 @@ export default function ProfileScreenStack() {
         <Stack.Screen name='profile-tab' component={ProfileScreen} 
         options={{
             headerShown:false
-        }}/> 
+        }} 
+         /> 
         <Stack.Screen name='my-product' component={MyProducts}  
         options={{
             headerStyle:{
                 backgroundColor:'#3b82f6',
             },
             headerTintColor:'#fff',
-            headerTitle:'My Products'
+            headerTitle:'My Issues'
         }} 
         />
         <Stack.Screen name="product-detail" component={ProductDetails}

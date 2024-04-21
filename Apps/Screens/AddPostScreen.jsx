@@ -45,7 +45,7 @@ export default function AddPostScreen() {
 
     setCategoryList([]);
     
-    const querySnapshot=await getDocs(collection(db,'Types'))
+    const querySnapshot=await getDocs(collection(db,'Community'))
 
     querySnapshot.forEach((doc)=>{
       console.log("Docs:",doc.data());
@@ -78,7 +78,7 @@ export default function AddPostScreen() {
     // Convert Uri to blob file 
     const resp=await fetch(image); 
     const blob=await resp.blob(); 
-    const storageRef = ref(storage,'communityPost/'+Date.now()+".jpeg");
+    const storageRef = ref(storage,'reportedIssues/'+Date.now()+".jpeg");
     uploadBytes(storageRef, blob).then((snapshot) => {
         console.log('Uploaded a blob or file!');
       }).then((resp)=>{
@@ -89,11 +89,11 @@ export default function AddPostScreen() {
           value.userEmail=user.primaryEmailAddress.emailAddress;
           value.userImage=user.imageUrl;
           
-          const docRef= await addDoc(collection(db,"UserPost"),value)
+          const docRef= await addDoc(collection(db,"UserIssue"),value)
           if(docRef.id){
             // whatever the value posted will print it out
             setLoading(false);
-            Alert.alert("Post added Successfully!!") 
+            Alert.alert("Issue Reported Successfully!!") 
           }
         })
       });
@@ -105,14 +105,14 @@ export default function AddPostScreen() {
     <KeyboardAvoidingView>
     <ScrollView className="p-5"> 
     <View className="flex flex-row gap-20 align-top">
-      <Text className="text-[20px] font-bold textAlign-center">Add New Post</Text>
+      <Text className="text-[20px] font-bold textAlign-center">Repost Issue</Text>
       {/* <Ionicons className="flex flex-row  " name="add-circle-outline" size={45} color="black" /> */}
 
       </View>
-      <Text className="text-[15px] text-gray-500  mb-3">"Create new post and start selling"</Text> 
+      <Text className="text-[15px] text-gray-500  mb-3 mt-2">"Your concerns matter, report them here."</Text> 
       
       <Formik
-      initialValues={{title:'',desc:'',price:'',category:'',address:'',image:'',userName:'',userEmail:'',userImage:'',createdAt:Date.now()}} 
+      initialValues={{title:'',desc:'',category:'',address:'',image:'',userName:'',userEmail:'',userImage:'',createdAt:Date.now()}} 
       onSubmit={value=>onSubmitMethod(value)}
       validate={(values)=>{
         const errors={}
@@ -166,20 +166,15 @@ export default function AddPostScreen() {
           value={values.desc}  
           numberOfLines={5}
           onChangeText={handleChange('desc')}
-          />
-            
-          <TextInput
-          style={styles.input}
-          placeholder='price'
-          value={values?.price}  
-          keyboardType='default'
-          onChangeText={handleChange('price')}
-          />
+          /> 
+          
+          
 
           <TextInput
           style={styles.input}
           placeholder='Address'
           value={values?.address}  
+          numberOfLines={2} 
           keyboardType='ascii-capable'
           onChangeText={handleChange('address')}
           />

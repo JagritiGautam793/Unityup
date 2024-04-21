@@ -84,9 +84,8 @@ const shareProduct=async()=>{
   
 
     const deleteFromFirestore=async()=>{ 
-
         console.log("deleted") 
-        const q=query(collection(db,'UserPost'),where('title','==',product.title)) 
+        const q=query(collection(db,'UserIssue'),where('title','==',product.title)) 
         const snapshot=await getDocs(q); 
         snapshot.forEach(doc=>{
             deleteDoc(doc.ref).then(resp=>{
@@ -131,7 +130,6 @@ const shareProduct=async()=>{
           className="z-40 bg-red-500 rounded-full p-4 m-2">
           <Text className="text-center text-white">Delete Post</Text>
          </TouchableOpacity>
-
          :
          <TouchableOpacity 
        onPress={()=>sendEmailMessage()}

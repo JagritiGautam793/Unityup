@@ -18,7 +18,7 @@ export default function ItemList() {
     const getItemListByCategory=async()=>{ 
         setItemList([]); 
         setLoading(true);
-        const q=query(collection(db,'UserPost'),where('category','==',params.category)) 
+        const q=query(collection(db,'UserIssue'),where('category','==',params.category)) 
         const snapshot=await getDocs(q); 
         setLoading(false)
         snapshot.forEach(doc=>{
@@ -36,7 +36,7 @@ export default function ItemList() {
 
      itemList?.length>0?<LatestItemList latestItemList={itemList}
       heading={'Latest Post'}/>
-      :<Text className="p-5 text-[20px] justify-center text-gray-400 text-center mt-24">No post found</Text>}
+      :<Text className="p-5 text-[20px] justify-center text-gray-400 text-center mt-24">No Issue found</Text>}
     </View>
   )
 }

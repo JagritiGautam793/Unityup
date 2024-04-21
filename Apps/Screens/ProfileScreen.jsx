@@ -19,7 +19,7 @@ export default function ProfileScreen() {
   const menuList=[
     {
       id:1, 
-      name:'My Products',
+      name:'My Issues',
       icon:diary,
       path:'my-product'
 
@@ -52,7 +52,7 @@ export default function ProfileScreen() {
       return ;
     }
     // ?ternary operator for seperating the condition with its two possible outcomes
-   item?.path ?navigation.navigate(item.path):null;
+   item?.path?navigation.navigate(item.path):null;
 
 
   }
