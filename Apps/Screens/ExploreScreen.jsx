@@ -9,7 +9,14 @@ import {
   ScrollView,
 } from "react-native";
 import Categories from "../Components/HomeScreen/Campaigns";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  updateDoc,
+} from "firebase/firestore";
 import { app } from "../../firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 
@@ -35,59 +42,89 @@ const ExploreScreen = () => {
     });
   };
 
-  const data = [
-    {
-      id: 1,
-      title: "Annual Community Picnic",
-      text: "Join us this Saturday for our annual Community Picnic at Central Park! Enjoy a day filled with games, music, food, and fun. Don't miss out on this opportunity to connect with your neighbors and celebrate our community spirit! ",
-      time: "1 day ago",
-      likes: 0,
-      comments: 0,
-    },
-    {
-      id: 2,
-      title: "Infrastructure Update",
-      text: "We're excited to announce that construction on Main Street will begin next week to repair potholes and improve road safety. Please be advised of temporary road closures and plan alternate routes during this time. Thank you for your patience as we work to enhance our community's infrastructure.",
-      time: "2 minutes ago",
-      likes: 0,
-      comments: 0,
-    },
-    {
-      id: 3,
-      title: "Neighborhood Watch Meeting",
-      text: "Attention neighbors: Our next Neighborhood Watch meeting will be held this Thursday at the community center. Join us to discuss safety concerns, share updates, and collaborate on strategies to keep our neighborhood secure. Together, we can make a difference",
-      time: "3 hours ago",
-      likes: 0,
-      comments: 0,
-    },
-    {
-      id: 4,
-      title: "Local Business Spotlight!!",
-      time: "4 months ago",
-      text: "Introducing our newest addition to the neighborhood: The Green Bean Café! Swing by for a delicious cup of coffee, freshly baked pastries, and a cozy atmosphere. Let's show our support for local businesses and welcome them to our community!",
-      likes: 0,
-      comments: 0,
-    },
-    {
-      id: 5,
-      title: "Public Health Notice",
-      time: "5 weeks ago",
-      text: "Attention residents: With the flu season approaching, it's important to prioritize your health and well-being. Remember to get your flu shot, practice good hygiene habits, and stay home if you're feeling unwell. Let's work together to keep our community healthy and safe!",
-      likes: 0,
-      comments: 0,
-    },
-  ];
-
-  const [posts, setPosts] = useState(data);
+  const [announ, setAnnoun] = useState(data);
   const [likes, setLikes] = useState({});
   const [comments, setComments] = useState({});
 
-  const handleLike = (postId) => {
+  useEffect(() => {
+    getAnnoun();
+  }, []);
+
+  const getAnnoun = async () => {
+    setAnnoun([]);
+
+    const querySnapshot = await getDocs(collection(db, "Announcements"));
+
+    querySnapshot.forEach((doc) => {
+      console.log("annData:", doc.data());
+      setAnnoun((announ) => [...announ, doc.data()]);
+    });
+  };
+  const data = [];
+
+  // const data = [
+  //   {
+  //     id: 1,
+  //     title: "Annual Community Picnic",
+  //     text: "Join us this Saturday for our annual Community Picnic at Central Park! Enjoy a day filled with games, music, food, and fun. Don't miss out on this opportunity to connect with your neighbors and celebrate our community spirit! ",
+  //     time: "1 day ago",
+  //     likes: 0,
+  //     comments: 0,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Infrastructure Update",
+  //     text: "We're excited to announce that construction on Main Street will begin next week to repair potholes and improve road safety. Please be advised of temporary road closures and plan alternate routes during this time. Thank you for your patience as we work to enhance our community's infrastructure.",
+  //     time: "2 minutes ago",
+  //     likes: 0,
+  //     comments: 0,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "Neighborhood Watch Meeting",
+  //     text: "Attention neighbors: Our next Neighborhood Watch meeting will be held this Thursday at the community center. Join us to discuss safety concerns, share updates, and collaborate on strategies to keep our neighborhood secure. Together, we can make a difference",
+  //     time: "3 hours ago",
+  //     likes: 0,
+  //     comments: 0,
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "Local Business Spotlight!!",
+  //     time: "4 months ago",
+  //     text: "Introducing our newest addition to the neighborhood: The Green Bean Café! Swing by for a delicious cup of coffee, freshly baked pastries, and a cozy atmosphere. Let's show our support for local businesses and welcome them to our community!",
+  //     likes: 0,
+  //     comments: 0,
+  //   },
+  //   {
+  //     id: 5,
+  //     title: "Public Health Notice",
+  //     time: "5 weeks ago",
+  //     text: "Attention residents: With the flu season approaching, it's important to prioritize your health and well-being. Remember to get your flu shot, practice good hygiene habits, and stay home if you're feeling unwell. Let's work together to keep our community healthy and safe!",
+  //     likes: 0,
+  //     comments: 0,
+  //   },
+  // ];
+
+  const handleLike = async (postId) => {
+    // Update the state
+    let updatedLikes;
     setLikes((prevLikes) => {
-      const updatedLikes = { ...prevLikes };
+      updatedLikes = { ...prevLikes };
       updatedLikes[postId] = (updatedLikes[postId] || 0) + 1;
       return updatedLikes;
     });
+
+    try {
+      // Reference to the Firestore document
+      const likesDoc = doc(db, "Announcements", "likes");
+
+      // Update the specific like count in Firestore
+      await updateDoc(likesDoc, {
+        [`likes.${postId}`]: updatedLikes[postId], // Use updatedLikes directly
+      });
+    } catch (error) {
+      console.error("Error updating likes:", error);
+    }
   };
 
   const handleComment = (postId) => {
@@ -107,7 +144,7 @@ const ExploreScreen = () => {
       </View>
       <FlatList
         style={styles.list}
-        data={posts}
+        data={announ}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
