@@ -12,9 +12,11 @@ import Categories from "../Components/HomeScreen/Campaigns";
 import {
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   getFirestore,
+  increment,
   updateDoc,
 } from "firebase/firestore";
 import { app } from "../../firebaseConfig";
@@ -106,22 +108,37 @@ const ExploreScreen = () => {
   // ];
 
   const handleLike = async (postId) => {
-    // Update the state
-    let updatedLikes;
-    setLikes((prevLikes) => {
-      updatedLikes = { ...prevLikes };
-      updatedLikes[postId] = (updatedLikes[postId] || 0) + 1;
-      return updatedLikes;
-    });
+    // Ensure postId (which is actually the custom id you're assigning) is valid
+    if (!postId) {
+      console.error("Post ID is missing.");
+      return;
+    }
 
     try {
-      // Reference to the Firestore document
-      const likesDoc = doc(db, "Announcements", "likes");
+      // Reference to the "Announcements" collection
+      const announcementsRef = collection(db, "Announcements");
 
-      // Update the specific like count in Firestore
-      await updateDoc(likesDoc, {
-        [`likes.${postId}`]: updatedLikes[postId], // Use updatedLikes directly
+      // Query to find the document with the specific id
+      const querySnapshot = await getDocs(announcementsRef);
+      let targetDocRef = null;
+
+      // Find the document with the matching 'id' field
+      querySnapshot.forEach((docSnap) => {
+        if (docSnap.data().id === postId) {
+          targetDocRef = doc(db, "Announcements", docSnap.id); // Using the Firestore document ID
+        }
       });
+
+      // If we found the document, update the 'likes' field
+      if (targetDocRef) {
+        // Increment the 'likes' field by 1
+        await updateDoc(targetDocRef, {
+          likes: increment(1),
+        });
+        console.log("Likes updated successfully!");
+      } else {
+        console.error("Document with id " + postId + " not found.");
+      }
     } catch (error) {
       console.error("Error updating likes:", error);
     }
