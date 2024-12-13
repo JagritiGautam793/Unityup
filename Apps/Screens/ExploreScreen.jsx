@@ -178,9 +178,9 @@ const ExploreScreen = () => {
                         uri: "https://cdn-icons-png.freepik.com/256/1370/1370907.png?uid=R142649988&ga=GA1.1.1223597880.1711173553&semt=ais_hybrid",
                       }}
                     />
-                    <Text style={styles.socialBarLabel}>
+                    {/* <Text style={styles.socialBarLabel}>
                       {comments[item.id] || 0}
-                    </Text>
+                    </Text> */}
                   </TouchableOpacity>
                 </View>
               </View>

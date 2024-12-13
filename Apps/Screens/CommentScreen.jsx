@@ -1,6 +1,7 @@
 import { useUser } from "@clerk/clerk-expo";
 import { useNavigation } from "@react-navigation/native";
 import {
+  addDoc,
   collection,
   getDocs,
   getFirestore,
@@ -92,14 +93,39 @@ const CommentScreen = ({ route }) => {
     };
   }, [navigation]);
 
+  const handleCommentSubmit = async () => {
+    try {
+      const submissionData = {
+        AnnId: annIdRef,
+        UserId: user.id,
+        UserAvatar: user.imageUrl,
+        UserName: user.fullName,
+        createdAt: Date.now(),
+        UserComment: commentText.trim(),
+      };
+      // add a new comment to the database
+      await addDoc(collection(db, "Comments"), submissionData);
+
+      // prev - > 4 comment ["1","2","3","4"]
+      // prev - > 5 comment ["1","2","3","4","5"]
+      setCommentsList((prev) => [...prev, submissionData]);
+      setCommentText("");
+      console.log("Comment added successfully!");
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+    }
+  };
+
   // Render individual comment
   const renderComment = ({ item }) => (
     <View style={styles.commentContainer}>
-      <Image source={{ uri: item.userAvatar }} style={styles.userAvatar} />
+      <Image source={{ uri: item.UserAvatar }} style={styles.userAvatar} />
       <View style={styles.commentContent}>
         <View style={styles.commentHeader}>
-          <Text style={styles.userName}>{item.UserId}</Text>
-          <Text style={styles.timestamp}>{item.time.seconds}</Text>
+          <Text style={styles.userName}>{item.UserName}</Text>
+          <Text style={styles.timestamp}>
+            {new Date(item.createdAt).toLocaleString()}
+          </Text>
         </View>
         <Text style={styles.commentText}>{item.UserComment}</Text>
 
@@ -135,7 +161,7 @@ const CommentScreen = ({ route }) => {
       {/* Comment Input Area */}
       <View style={styles.inputContainer}>
         <Image
-          source={{ uri: "https://via.placeholder.com/40" }}
+          source={{ uri: user.imageUrl || "https://via.placeholder.com/40" }}
           style={styles.currentUserAvatar}
         />
         <TextInput
@@ -149,6 +175,7 @@ const CommentScreen = ({ route }) => {
         <TouchableOpacity
           style={styles.sendButton}
           disabled={!commentText.trim()}
+          onPress={handleCommentSubmit}
         >
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
