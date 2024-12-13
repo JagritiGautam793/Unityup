@@ -60,9 +60,13 @@ const ExploreScreen = () => {
 
     querySnapshot.forEach((doc) => {
       console.log("annData:", doc.data());
-      setAnnoun((announ) => [...announ, doc.data()]);
+      console.log("annId:", doc.id);
+      const datawithId = { ...doc.data(), anID: doc.id };
+      // console.log("datawithId:", datawithId);
+      setAnnoun((announ) => [...announ, datawithId]);
     });
   };
+
   const data = [];
 
   const handleLike = async (postId) => {
@@ -118,14 +122,6 @@ const ExploreScreen = () => {
     }
   };
 
-  const handleComment = (postId) => {
-    setComments((prevComments) => {
-      const updatedComments = { ...prevComments };
-      updatedComments[postId] = (updatedComments[postId] || 0) + 1;
-      return updatedComments;
-    });
-  };
-
   return (
     <ScrollView style={styles.container}>
       <Categories categoryList={campaignList} />
@@ -147,6 +143,7 @@ const ExploreScreen = () => {
                   <Text style={styles.title}>{item.title}</Text>
                   <Text style={styles.time}>{item.time}</Text>
                   <Text style={styles.text}>{item.text}</Text>
+                  <Text style={styles.text}>{item.anId}</Text>
                 </View>
                 <View style={styles.cardFooter}>
                   <TouchableOpacity
@@ -165,16 +162,13 @@ const ExploreScreen = () => {
                             }
                       }
                     />
-                    <Text style={styles.socialBarLabel}>
-                      {likes[item.id] || 0}
-                    </Text>
+                    <Text style={styles.socialBarLabel}>{item.likes || 0}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.socialBarButton}
                     onPress={() => {
                       navigation.navigate("Comments", {
-                        postId: item.id,
-                        comments: item.comments,
+                        announID: item.anID,
                       });
                     }}
                   >

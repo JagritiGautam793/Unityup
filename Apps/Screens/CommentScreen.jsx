@@ -1,291 +1,264 @@
+import { useUser } from "@clerk/clerk-expo";
+import { useNavigation } from "@react-navigation/native";
 import {
-  StyleSheet,
-  Text,
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
+import React, { useState, useEffect } from "react";
+import {
   View,
+  Text,
   TextInput,
-  Alert,
   TouchableOpacity,
   FlatList,
+  StyleSheet,
+  SafeAreaView,
+  Image,
 } from "react-native";
-import React, { useEffect, useState } from "react";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { useUser } from "@clerk/clerk-expo";
-import {
-  getFirestore,
-  doc,
-  updateDoc,
-  arrayUnion,
-  Timestamp,
-  arrayRemove,
-} from "firebase/firestore";
-import { firebaseApp } from "../../firebaseConfig";
+import { app } from "../../firebaseConfig";
 
-const firestore = getFirestore(firebaseApp);
+// Placeholder comment data
+const DUMMY_COMMENTS = [
+  {
+    id: "1",
+    userName: "John Doe",
+    text: "This is an amazing post! I really enjoyed reading it.",
+    timestamp: "2 hours ago",
+    userAvatar: "https://via.placeholder.com/50",
+  },
+  {
+    id: "2",
+    userName: "Jane Smith",
+    text: "Great insights shared here. Looking forward to more content like this.",
+    timestamp: "1 hour ago",
+    userAvatar: "https://via.placeholder.com/50",
+  },
+  {
+    id: "3",
+    userName: "Mike Johnson",
+    text: "Could you elaborate more on this topic? Very interesting!",
+    timestamp: "30 mins ago",
+    userAvatar: "https://via.placeholder.com/50",
+  },
+];
 
-const CommentScreen = () => {
-  const route = useRoute();
-  const navigation = useNavigation();
+const CommentScreen = ({ route }) => {
+  const db = getFirestore(app);
+  const [commentText, setCommentText] = useState("");
+  const [commentsList, setCommentsList] = useState([]);
   const { user } = useUser();
+  console.log(user.id, user.primaryEmailAddress?.emailAddress, user.fullName);
+  const annIdRef = route.params.announID;
+  console.log("Announcement ID:", annIdRef);
 
-  const [comment, setComment] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [postId, setPostId] = useState("");
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState(null);
+  const navigation = useNavigation();
 
+  // Fetch comments from the database of the current announcement annIdRef
   useEffect(() => {
-    if (user) {
-      setUserEmail(user.emailAddresses[0]?.emailAddress || "");
-    }
-    setComments(route.params.comments || []);
-    setPostId(route.params.postId);
-  }, [route.params, user]);
-
-  const postComment = async () => {
-    if (!userEmail || !postId || !comment.trim() || loading) {
-      Alert.alert(
-        "Error",
-        "Invalid input. Please check your comment and try again."
-      );
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const postRef = doc(firestore, "posts", postId);
-
-      // If editing an existing comment
-      if (editingCommentId) {
-        // Remove the old comment
-        const oldComment = comments.find((c) => c.id === editingCommentId);
-        await updateDoc(postRef, {
-          comments: arrayRemove(oldComment),
-        });
-
-        // Add updated comment
-        const updatedComment = {
-          ...oldComment,
-          comment: comment.trim(),
-          timestamp: Timestamp.now(),
-        };
-
-        await updateDoc(postRef, {
-          comments: arrayUnion(updatedComment),
-        });
-
-        // Update local state
-        setComments(
-          comments.map((c) => (c.id === editingCommentId ? updatedComment : c))
-        );
-
-        setEditingCommentId(null);
-      } else {
-        // Adding a new comment
-        const newComment = {
-          id: Date.now().toString(), // Unique ID
-          userEmail,
-          comment: comment.trim(),
-          postId,
-          timestamp: Timestamp.now(),
-        };
-
-        await updateDoc(postRef, {
-          comments: arrayUnion(newComment),
-        });
-
-        setComments([...comments, newComment]);
+    const getAnnComments = async () => {
+      if (user) {
+        try {
+          console.log("Fetching comments for announcement:", annIdRef);
+          const q = query(
+            collection(db, "Comments"),
+            where("AnnId", "==", annIdRef)
+          );
+          const snapshot = await getDocs(q);
+          const comments = [];
+          snapshot.forEach((doc) => {
+            console.log(doc.data());
+            comments.push(doc.data());
+          });
+          setCommentsList(comments);
+        } catch (error) {
+          console.error("Error fetching comments:", error);
+        }
       }
+    };
 
-      setComment(""); // Clear input field
-    } catch (error) {
-      console.error("Error updating post:", error);
-      Alert.alert("Error", "Failed to post comment. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Call getAnnComments when the component mounts or when the navigation focus changes
+    getAnnComments();
 
-  const deleteComment = async (commentToDelete) => {
-    if (commentToDelete.userEmail !== userEmail) {
-      Alert.alert("Error", "You can only delete your own comments.");
-      return;
-    }
+    // Add a listener to re-fetch comments when the navigation focus changes
+    const unsubscribe = navigation.addListener("focus", getAnnComments);
+    console.log(commentsList);
 
-    setLoading(true);
-    try {
-      const postRef = doc(firestore, "posts", postId);
+    // Cleanup function to remove the listener when the component unmounts
+    return () => {
+      unsubscribe();
+    };
+  }, [navigation]);
 
-      await updateDoc(postRef, {
-        comments: arrayRemove(commentToDelete),
-      });
-
-      // Update local state
-      setComments(comments.filter((c) => c.id !== commentToDelete.id));
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      Alert.alert("Error", "Failed to delete comment. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startEditComment = (commentToEdit) => {
-    if (commentToEdit.userEmail !== userEmail) {
-      Alert.alert("Error", "You can only edit your own comments.");
-      return;
-    }
-
-    setEditingCommentId(commentToEdit.id);
-    setComment(commentToEdit.comment);
-  };
-
-  const renderCommentItem = ({ item }) => (
+  // Render individual comment
+  const renderComment = ({ item }) => (
     <View style={styles.commentContainer}>
+      <Image source={{ uri: item.userAvatar }} style={styles.userAvatar} />
       <View style={styles.commentContent}>
-        <Text style={styles.userEmail}>{item.userEmail}</Text>
-        <Text>{item.comment}</Text>
-      </View>
-      {item.userEmail === userEmail && (
-        <View style={styles.commentActions}>
-          <TouchableOpacity
-            onPress={() => startEditComment(item)}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => deleteComment(item)}
-            style={styles.actionButton}
-          >
-            <Text style={styles.actionText}>Delete</Text>
-          </TouchableOpacity>
+        <View style={styles.commentHeader}>
+          <Text style={styles.userName}>{item.UserId}</Text>
+          <Text style={styles.timestamp}>{item.time.seconds}</Text>
         </View>
-      )}
+        <Text style={styles.commentText}>{item.UserComment}</Text>
+
+        {/* Like and Reply Actions */}
+        {/* <View style={styles.commentActions}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionText}>Like</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionText}>Reply</Text>
+          </TouchableOpacity>
+        </View> */}
+      </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Comments Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {editingCommentId ? "Edit Comment" : "Comments"}
-        </Text>
+        <Text style={styles.headerTitle}>Comments</Text>
+        <Text style={styles.commentCount}>{commentsList.length} Comments</Text>
       </View>
 
+      {/* Comments List */}
       <FlatList
-        data={comments}
-        renderItem={renderCommentItem}
+        data={commentsList}
+        renderItem={renderComment}
         keyExtractor={(item) => item.id}
-        style={styles.commentsList}
+        contentContainerStyle={styles.commentsList}
       />
 
+      {/* Comment Input Area */}
       <View style={styles.inputContainer}>
+        <Image
+          source={{ uri: "https://via.placeholder.com/40" }}
+          style={styles.currentUserAvatar}
+        />
         <TextInput
-          value={comment}
-          onChangeText={(txt) => setComment(txt)}
-          placeholder="Type comment here"
-          style={styles.textInput}
+          style={styles.input}
+          value={commentText}
+          onChangeText={setCommentText}
+          placeholder="Write a comment..."
+          multiline
+          placeholderTextColor="#888"
         />
         <TouchableOpacity
-          onPress={postComment}
-          disabled={loading}
           style={styles.sendButton}
+          disabled={!commentText.trim()}
         >
-          <Text
-            style={[
-              styles.sendButtonText,
-              { color: loading ? "#ccc" : "#3B82F6" },
-            ]}
-          >
-            {editingCommentId ? "Update" : loading ? "Sending..." : "Send"}
-          </Text>
+          <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F5F5F5",
   },
   header: {
-    width: "100%",
-    height: 60,
-    flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#8e8e8e",
-    alignItems: "center",
-  },
-  backButton: {
-    marginLeft: 15,
-  },
-  backButtonText: {
-    fontSize: 18,
-  },
-  headerTitle: {
-    marginLeft: 15,
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  commentsList: {
-    flex: 1,
-  },
-  commentContainer: {
-    padding: 10,
-    borderBottomWidth: 0.5,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  commentCount: {
+    color: "#888",
+  },
+  commentsList: {
+    paddingBottom: 20,
+  },
+  commentContainer: {
+    flexDirection: "row",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+    backgroundColor: "white",
+  },
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
   },
   commentContent: {
     flex: 1,
-    marginRight: 10,
   },
-  userEmail: {
+  commentHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+  userName: {
     fontWeight: "bold",
+    fontSize: 16,
+  },
+  timestamp: {
+    color: "#888",
+    fontSize: 12,
+  },
+  commentText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   commentActions: {
     flexDirection: "row",
+    marginTop: 10,
   },
   actionButton: {
-    marginLeft: 10,
+    marginRight: 15,
   },
   actionText: {
-    color: "#3B82F6",
+    color: "#888",
+    fontWeight: "500",
   },
   inputContainer: {
-    width: "100%",
-    height: 60,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderTopWidth: 0.5,
-    borderTopColor: "#8e8e8e",
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+    backgroundColor: "white",
   },
-  textInput: {
-    width: "80%",
-    marginLeft: 20,
+  currentUserAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 15,
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#E0E0E0",
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
-  },
-  sendButton: {
     marginRight: 10,
   },
+  sendButton: {
+    backgroundColor: "#007BFF",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    opacity: 0.5,
+  },
   sendButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
+    color: "white",
+    fontWeight: "bold",
   },
 });
 
