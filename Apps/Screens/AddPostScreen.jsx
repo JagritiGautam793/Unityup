@@ -15,6 +15,7 @@ import {
 import { Formik } from "formik";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location"; // Location import
 import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,17 +24,23 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { app } from "../../firebaseConfig";
 
 export default function AddPostScreen() {
+  // State variables
   const [image, setImage] = useState(null);
-  const db = getFirestore(app);
   const [categoryList, setCategoryList] = useState([]);
-  const storage = getStorage();
   const [loading, setLoading] = useState(false);
+  const [locationCoords, setLocationCoords] = useState(null);
+
+  // Firebase and authentication setup
+  const db = getFirestore(app);
+  const storage = getStorage();
   const { user } = useUser();
 
+  // Lifecycle method
   useEffect(() => {
     getCategoryList();
   }, []);
 
+  // Fetch category list from Firestore
   const getCategoryList = async () => {
     setCategoryList([]);
     const querySnapshot = await getDocs(collection(db, "Community"));
@@ -42,6 +49,7 @@ export default function AddPostScreen() {
     });
   };
 
+  // Image picker method
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -55,24 +63,116 @@ export default function AddPostScreen() {
     }
   };
 
+  // Location verification method
+  const verifyLocation = async (values, setFieldValue) => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to verify address."
+        );
+        return;
+      }
+
+      setLoading(true);
+
+      // Request high accuracy location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High, // Most precise location possible
+      });
+
+      const addressResponse = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        // Optional: You can try to specify the maximum number of results
+        maxResults: 5,
+      });
+
+      console.log("FULL LOCATION COORDINATES:", {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        accuracy: location.coords.accuracy,
+      });
+
+      // Log ALL address responses, not just the first one
+      addressResponse.forEach((address, index) => {
+        console.log(`Address Response [${index}]:`, {
+          streetNumber: address.streetNumber,
+          street: address.street,
+          district: address.district,
+          subregion: address.subregion,
+          city: address.city,
+          region: address.region,
+          postalCode: address.postalCode,
+          country: address.country,
+        });
+      });
+
+      if (addressResponse.length > 0) {
+        const address = addressResponse[0];
+
+        // More aggressive address compilation
+        const addressParts = [
+          address.streetNumber || "",
+          address.street || "",
+          address.district || "",
+          address.subregion || "",
+          address.city || "",
+          address.region || "",
+          address.postalCode || "",
+        ];
+
+        const formattedAddress = addressParts
+          .filter((part) => part.trim() !== "")
+          .join(", ")
+          .trim();
+
+        setFieldValue("address", formattedAddress);
+        setLocationCoords({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        Alert.alert(
+          "Location Verified",
+          "Your current location has been added."
+        );
+      }
+    } catch (error) {
+      console.error("Location verification error:", error);
+      Alert.alert("Error", "Could not verify location. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Image upload method
+  const uploadImage = async () => {
+    const resp = await fetch(image);
+    const blob = await resp.blob();
+    const storageRef = ref(storage, `reportedIssues/${Date.now()}.jpeg`);
+
+    await uploadBytes(storageRef, blob);
+    return await getDownloadURL(storageRef);
+  };
+
+  // Submission method
   const onSubmitMethod = async (value) => {
     setLoading(true);
 
     try {
-      const resp = await fetch(image);
-      const blob = await resp.blob();
-      const storageRef = ref(storage, `reportedIssues/${Date.now()}.jpeg`);
+      // Upload image if exists
+      const imageUrl = image ? await uploadImage() : null;
 
-      await uploadBytes(storageRef, blob);
-      const downloadUrl = await getDownloadURL(storageRef);
-
+      // Prepare submission data with location coordinates
       const submissionData = {
         ...value,
-        image: downloadUrl,
+        image: imageUrl,
         userName: user.fullName,
         userEmail: user.primaryEmailAddress.emailAddress,
         userImage: user.imageUrl,
         createdAt: Date.now(),
+        ...(locationCoords && { location: locationCoords }), // Add location if available
       };
 
       const docRef = await addDoc(collection(db, "UserIssue"), submissionData);
@@ -106,6 +206,7 @@ export default function AddPostScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <View style={styles.headerContainer}>
             <View>
               <Text style={styles.headerTitle}>Report an Issue</Text>
@@ -126,12 +227,9 @@ export default function AddPostScreen() {
             onSubmit={onSubmitMethod}
             validate={(values) => {
               const errors = {};
-              if (!values.title) {
-                errors.title = "Issue title is required";
-              }
-              if (!values.category) {
+              if (!values.title) errors.title = "Issue title is required";
+              if (!values.category)
                 errors.category = "Please select a category";
-              }
               return errors;
             }}
           >
@@ -143,6 +241,7 @@ export default function AddPostScreen() {
               errors,
             }) => (
               <View style={styles.formContainer}>
+                {/* Image Picker */}
                 <TouchableOpacity
                   onPress={pickImage}
                   style={styles.imagePicker}
@@ -167,6 +266,7 @@ export default function AddPostScreen() {
                   )}
                 </TouchableOpacity>
 
+                {/* Title Input */}
                 <View style={styles.inputGroup}>
                   <Ionicons
                     name="document-text"
@@ -186,6 +286,7 @@ export default function AddPostScreen() {
                   <Text style={styles.errorText}>{errors.title}</Text>
                 )}
 
+                {/* Description Input */}
                 <View style={styles.inputGroup}>
                   <Ionicons
                     name="information-circle"
@@ -204,6 +305,7 @@ export default function AddPostScreen() {
                   />
                 </View>
 
+                {/* Location Input with Verification */}
                 <View style={styles.inputGroup}>
                   <Ionicons
                     name="location"
@@ -218,8 +320,15 @@ export default function AddPostScreen() {
                     value={values.address}
                     onChangeText={handleChange("address")}
                   />
+                  <TouchableOpacity
+                    onPress={() => verifyLocation(values, setFieldValue)}
+                    disabled={loading}
+                  >
+                    <Ionicons name="locate" size={20} color="#4A90E2" />
+                  </TouchableOpacity>
                 </View>
 
+                {/* Category Picker */}
                 <View style={styles.pickerContainer}>
                   <Ionicons
                     name="list"
@@ -252,6 +361,7 @@ export default function AddPostScreen() {
                   <Text style={styles.errorText}>{errors.category}</Text>
                 )}
 
+                {/* Submit Button */}
                 <TouchableOpacity onPress={handleSubmit} disabled={loading}>
                   <LinearGradient
                     colors={
